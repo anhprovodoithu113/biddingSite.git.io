@@ -1,0 +1,71 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+</head>
+<body>
+    <label id="lblName"></label>
+    <label id="lblBid"></label><br />
+    <label id="lblDescr"></label> &nbsp;
+    <label>Time Left:</label>
+    <label id="lblTime"></label><br />
+    <button id="btnCurrentBid">Current Bid</button>
+    <button id="btnMakeBid">Make Bid</button>
+    <input type="text" id="txtBid" />
+    <ul id="lstWins" style="list-style: none;"></ul>
+
+
+    <script src="~/Scripts/jquery-3.3.1.min.js"></script>
+    <script src="~/Scripts/jquery.signalR-2.4.1.min.js"></script>
+    <script src="/signalr/hubs"></script>
+    <script type="text/javascript">
+        $(function () {
+            var connection = $.hubConnection();
+            var hubProxy = connection.createHubProxy('AuctionHub');
+
+            hubProxy.on('CloseBid', function () {
+                UpdateButtons(false);
+            });
+
+            hubProxy.on('CloseBidWin', function (data) {
+                UpdateButtons(false);
+                UpdateBid(data, 1);
+            });
+
+            hubProxy.on('UpdateBid', function (data) {
+                UpdateBid(data, 0);
+                UpdateButtons(true);
+            });
+
+            function UpdateBid(bid, updateObject) {
+                if (bid) {
+                    $('#lblName').text(bid.Name);
+                    $('#lblDescr').text(bid.Description);
+                    $('#lilBid').text(bid.BidPrice);
+                    $('#lblTime').text(bid.TimeLeft);
+                    if (updateObject > 0) {
+                        $('#lstWins').append('<li>' + bid.Name + ' at ' + bid.BidPrice + '</li>');
+                    }
+                }
+            }
+
+            function UpdateButtons(state) {
+                $('#btnCurrentBid').enabled = state;
+                $('#btnMakeBid').enabled = state;
+            }
+
+            connection.start().done(function () {
+                $('#btnCurrentBid').click(function () { hubProxy.invoke('MakeCurrentBid'); });
+                $('#btnMakeBid').click(function () { hubProxy.invoke('MakeBid', $('#txtBid').val()); });
+            });
+        });
+    </script>
+</body>
+</html>
